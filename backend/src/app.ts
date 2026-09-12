@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -40,28 +41,38 @@ app.use(async (_req, _res, next) => {
   }
 });
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
-});
+function registerApi(target: express.Express | express.Router) {
+  target.get("/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+  target.use("/auth", authRouter);
+  target.use("/customers", customersRouter);
+  target.use("/categories", categoriesRouter);
+  target.use("/products", productsRouter);
+  target.use("/orders", ordersRouter);
+  target.use("/inventory", inventoryRouter);
+  target.use("/dashboard", dashboardRouter);
+  target.use("/reports", reportsRouter);
+  target.use("/settings", settingsRouter);
+  target.use("/search", searchRouter);
+  target.post("/uploads", upload.single("image"), (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "Image file is required" });
+      return;
+    }
+    const url = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    res.status(201).json({ url });
+  });
+}
 
-app.use("/api/auth", authRouter);
-app.use("/api/customers", customersRouter);
-app.use("/api/categories", categoriesRouter);
-app.use("/api/products", productsRouter);
-app.use("/api/orders", ordersRouter);
-app.use("/api/inventory", inventoryRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/reports", reportsRouter);
-app.use("/api/settings", settingsRouter);
-app.use("/api/search", searchRouter);
-
-app.post("/api/uploads", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    res.status(400).json({ error: "Image file is required" });
-    return;
-  }
-  const url = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-  res.status(201).json({ url });
-});
-
+registerApi(app);
+app.use("/api", registerApiRouter());
 app.use(errorHandler);
+
+function registerApiRouter() {
+  const router = express.Router();
+  registerApi(router);
+  return router;
+}
+
+export default app;
