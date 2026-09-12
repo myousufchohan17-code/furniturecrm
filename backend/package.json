@@ -11,6 +11,9 @@
     "generate": "prisma generate",
     "postinstall": "prisma generate"
   },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.2",
