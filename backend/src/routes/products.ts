@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
 import { asyncHandler } from "../middleware/error.js";
+import { routeParam } from "../lib/params.js";
 
 export const productsRouter = Router();
 
@@ -52,7 +53,7 @@ productsRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const product = await prisma.product.findUnique({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       include: { category: true, stockLogs: { orderBy: { createdAt: "desc" }, take: 20 } },
     });
     if (!product) {
@@ -99,7 +100,7 @@ productsRouter.put(
       return;
     }
     const product = await prisma.product.update({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       data: parsed.data,
       include: { category: true },
     });
@@ -112,7 +113,7 @@ productsRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     const existing = await prisma.product.findUnique({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       include: { _count: { select: { orderItems: true } } },
     });
     if (!existing) {

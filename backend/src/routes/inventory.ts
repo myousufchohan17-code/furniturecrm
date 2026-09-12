@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
 import { asyncHandler } from "../middleware/error.js";
+import { routeParam } from "../lib/params.js";
 
 export const inventoryRouter = Router();
 
@@ -60,7 +61,7 @@ inventoryRouter.post(
       return;
     }
 
-    const product = await prisma.product.findUnique({ where: { id: req.params.productId } });
+    const product = await prisma.product.findUnique({ where: { id: routeParam(req, "productId") } });
     if (!product) {
       res.status(404).json({ error: "Product not found" });
       return;

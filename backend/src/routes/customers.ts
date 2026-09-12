@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
 import { asyncHandler } from "../middleware/error.js";
+import { routeParam } from "../lib/params.js";
 
 export const customersRouter = Router();
 
@@ -51,7 +52,7 @@ customersRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const customer = await prisma.customer.findUnique({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       include: {
         orders: {
           include: { items: { include: { product: true } } },
@@ -90,7 +91,7 @@ customersRouter.put(
       return;
     }
     const customer = await prisma.customer.update({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       data: parsed.data,
     });
     await logActivity("customer", `Customer updated: ${customer.name}`, "customer", customer.id);
@@ -102,7 +103,7 @@ customersRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     const existing = await prisma.customer.findUnique({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       include: { _count: { select: { orders: true } } },
     });
     if (!existing) {

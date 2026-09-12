@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import type { Request, Response } from "express";
 import cors from "cors";
 import multer from "multer";
 import { errorHandler } from "./middleware/error.js";
@@ -41,38 +42,32 @@ app.use(async (_req, _res, next) => {
   }
 });
 
-function registerApi(target: express.Express | express.Router) {
-  target.get("/health", (_req, res) => {
-    res.json({ ok: true });
-  });
-  target.use("/auth", authRouter);
-  target.use("/customers", customersRouter);
-  target.use("/categories", categoriesRouter);
-  target.use("/products", productsRouter);
-  target.use("/orders", ordersRouter);
-  target.use("/inventory", inventoryRouter);
-  target.use("/dashboard", dashboardRouter);
-  target.use("/reports", reportsRouter);
-  target.use("/settings", settingsRouter);
-  target.use("/search", searchRouter);
-  target.post("/uploads", upload.single("image"), (req, res) => {
-    if (!req.file) {
-      res.status(400).json({ error: "Image file is required" });
-      return;
-    }
-    const url = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-    res.status(201).json({ url });
-  });
-}
+const api = express.Router();
 
-registerApi(app);
-app.use("/api", registerApiRouter());
+api.get("/health", (_req: Request, res: Response) => {
+  res.json({ ok: true });
+});
+api.use("/auth", authRouter);
+api.use("/customers", customersRouter);
+api.use("/categories", categoriesRouter);
+api.use("/products", productsRouter);
+api.use("/orders", ordersRouter);
+api.use("/inventory", inventoryRouter);
+api.use("/dashboard", dashboardRouter);
+api.use("/reports", reportsRouter);
+api.use("/settings", settingsRouter);
+api.use("/search", searchRouter);
+api.post("/uploads", upload.single("image"), (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: "Image file is required" });
+    return;
+  }
+  const url = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+  res.status(201).json({ url });
+});
+
+app.use(api);
+app.use("/api", api);
 app.use(errorHandler);
-
-function registerApiRouter() {
-  const router = express.Router();
-  registerApi(router);
-  return router;
-}
 
 export default app;

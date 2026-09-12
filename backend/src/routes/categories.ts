@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
 import { asyncHandler } from "../middleware/error.js";
+import { routeParam } from "../lib/params.js";
 
 export const categoriesRouter = Router();
 
@@ -50,7 +51,7 @@ categoriesRouter.put(
       return;
     }
     const category = await prisma.category.update({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       data: parsed.data,
     });
     await logActivity("category", `Category updated: ${category.name}`, "category", category.id);
@@ -62,7 +63,7 @@ categoriesRouter.delete(
   "/:id",
   asyncHandler(async (req, res) => {
     const existing = await prisma.category.findUnique({
-      where: { id: req.params.id },
+      where: { id: routeParam(req, "id") },
       include: { _count: { select: { products: true } } },
     });
     if (!existing) {
