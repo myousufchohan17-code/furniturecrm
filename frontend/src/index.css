@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Playfair Display", serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --color-wood: #3c2415;
+  --color-wood-deep: #2a1810;
+  --color-wood-mid: #5c3a24;
+  --color-gold: #c9a227;
+  --color-gold-soft: #e8d48b;
+  --color-cream: #f6f0e6;
+  --color-cream-deep: #efe6d6;
+  --color-linen: #fbf7f0;
+  --color-walnut: #8b5e3c;
+  --color-ink: #2c1b12;
+  --color-muted: #7a6554;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: #f6f0e6;
+  color: #2c1b12;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4b39a;
+  border-radius: 999px;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+.card-shadow {
+  box-shadow: 0 8px 24px rgba(60, 36, 21, 0.06);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.8rem;
+  background: #3c2415;
+  color: #f6f0e6;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #5c3a24;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled,
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.8rem;
+  background: #efe6d6;
+  color: #3c2415;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.8rem;
+  background: #c9a227;
+  color: #2a1810;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.8rem;
+  background: #9f1d1d;
+  color: white;
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.table-wrap th,
+.table-wrap td {
+  text-align: left;
+  padding: 0.85rem 0.75rem;
+  border-bottom: 1px solid #efe6d6;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.table-wrap th {
+  color: #7a6554;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
