@@ -76,8 +76,11 @@ customersRouter.post(
       res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
       return;
     }
-    const customer = await prisma.customer.create({ data: parsed.data });
-    await logActivity("customer", `New customer added: ${customer.name}`, "customer", customer.id);
+    const customer = await prisma.$transaction(async (tx) => {
+      const created = await tx.customer.create({ data: parsed.data });
+      await tx.activity.create({ data: { type: "customer", message: `New customer added: ${created.name}`, entity: "customer", entityId: created.id } });
+      return created;
+    });
     res.status(201).json(customer);
   })
 );
@@ -116,8 +119,10 @@ customersRouter.delete(
       });
       return;
     }
-    await prisma.customer.delete({ where: { id: existing.id } });
-    await logActivity("customer", `Customer deleted: ${existing.name}`, "customer", existing.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.customer.delete({ where: { id: existing.id } });
+      await tx.activity.create({ data: { type: "customer", message: `Customer deleted: ${existing.name}`, entity: "customer", entityId: existing.id } });
+    });
     res.json({ ok: true });
   })
 );

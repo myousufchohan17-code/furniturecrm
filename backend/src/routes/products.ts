@@ -77,16 +77,18 @@ productsRouter.post(
       res.status(400).json({ error: "Selected category does not exist" });
       return;
     }
-    const product = await prisma.product.create({
-      data: parsed.data,
-      include: { category: true },
-    });
-    if (product.stock > 0) {
-      await prisma.stockLog.create({
-        data: { productId: product.id, change: product.stock, reason: "Initial stock" },
+    const product = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({ data: parsed.data, include: { category: true } });
+      if (created.stock > 0) {
+        await tx.stockLog.create({
+          data: { productId: created.id, change: created.stock, reason: "Initial stock" },
+        });
+      }
+      await tx.activity.create({
+        data: { type: "product", message: `Product added: ${created.name}`, entity: "product", entityId: created.id },
       });
-    }
-    await logActivity("product", `Product added: ${product.name}`, "product", product.id);
+      return created;
+    });
     res.status(201).json(product);
   })
 );
@@ -126,8 +128,12 @@ productsRouter.delete(
       });
       return;
     }
-    await prisma.product.delete({ where: { id: existing.id } });
-    await logActivity("product", `Product deleted: ${existing.name}`, "product", existing.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.product.delete({ where: { id: existing.id } });
+      await tx.activity.create({
+        data: { type: "product", message: `Product deleted: ${existing.name}`, entity: "product", entityId: existing.id },
+      });
+    });
     res.json({ ok: true });
   })
 );

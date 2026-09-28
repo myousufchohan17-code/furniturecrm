@@ -1,7 +1,7 @@
 import { Router } from "express";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { logActivity } from "../lib/activity.js";
 import { asyncHandler } from "../middleware/error.js";
 import { routeParam } from "../lib/params.js";
 
@@ -22,7 +22,15 @@ const schema = z.object({
 });
 
 async function nextOrderNumber() {
-  return `FH-${Date.now().toString().slice(-8)}`;
+  return `FH-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
+}
+
+function combineItems(items: { productId: string; quantity: number }[]) {
+  const quantities = new Map<string, number>();
+  for (const item of items) {
+    quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.quantity);
+  }
+  return [...quantities].map(([productId, quantity]) => ({ productId, quantity }));
 }
 
 ordersRouter.get(
@@ -93,15 +101,16 @@ ordersRouter.post(
       return;
     }
 
+    const items = combineItems(parsed.data.items);
     const products = await prisma.product.findMany({
-      where: { id: { in: parsed.data.items.map((i) => i.productId) } },
+      where: { id: { in: items.map((i) => i.productId) } },
     });
-    if (products.length !== parsed.data.items.length) {
+    if (products.length !== items.length) {
       res.status(400).json({ error: "One or more products were not found" });
       return;
     }
 
-    for (const item of parsed.data.items) {
+    for (const item of items) {
       const product = products.find((p) => p.id === item.productId)!;
       if (product.stock < item.quantity) {
         res.status(400).json({
@@ -111,7 +120,7 @@ ordersRouter.post(
       }
     }
 
-    const lineItems = parsed.data.items.map((item) => {
+    const lineItems = items.map((item) => {
       const product = products.find((p) => p.id === item.productId)!;
       return { product, quantity: item.quantity, price: product.price };
     });
@@ -156,10 +165,13 @@ ordersRouter.post(
         });
       }
 
+      await tx.activity.create({
+        data: { type: "order", message: `Order ${created.orderNumber} created for ${customer.name}`, entity: "order", entityId: created.id },
+      });
+
       return created;
     });
 
-    await logActivity("order", `Order ${order.orderNumber} created for ${customer.name}`, "order", order.id);
     res.status(201).json(order);
   })
 );
@@ -188,17 +200,18 @@ ordersRouter.put(
       return;
     }
 
+    const items = combineItems(parsed.data.items);
     const products = await prisma.product.findMany({
-      where: { id: { in: parsed.data.items.map((i) => i.productId) } },
+      where: { id: { in: items.map((i) => i.productId) } },
     });
-    if (products.length !== parsed.data.items.length) {
+    if (products.length !== items.length) {
       res.status(400).json({ error: "One or more products were not found" });
       return;
     }
 
     const previousQty = new Map(existing.items.map((i) => [i.productId, i.quantity]));
 
-    for (const item of parsed.data.items) {
+    for (const item of items) {
       const product = products.find((p) => p.id === item.productId)!;
       const alreadyReserved = existing.status === "cancelled" ? 0 : previousQty.get(product.id) || 0;
       const available = product.stock + alreadyReserved;
@@ -210,7 +223,7 @@ ordersRouter.put(
       }
     }
 
-    const lineItems = parsed.data.items.map((item) => {
+    const lineItems = items.map((item) => {
       const product = products.find((p) => p.id === item.productId)!;
       return { product, quantity: item.quantity, price: product.price };
     });
@@ -276,10 +289,13 @@ ordersRouter.put(
         }
       }
 
+      await tx.activity.create({
+        data: { type: "order", message: `Order ${updated.orderNumber} updated`, entity: "order", entityId: updated.id },
+      });
+
       return updated;
     });
 
-    await logActivity("order", `Order ${order.orderNumber} updated`, "order", order.id);
     res.json(order);
   })
 );
@@ -337,7 +353,7 @@ ordersRouter.patch(
           });
         }
       }
-      return tx.order.update({
+      const updated = await tx.order.update({
         where: { id: existing.id },
         data: { status },
         include: {
@@ -345,9 +361,12 @@ ordersRouter.patch(
           items: { include: { product: { include: { category: true } } } },
         },
       });
+      await tx.activity.create({
+        data: { type: "order", message: `Order ${updated.orderNumber} marked ${status}`, entity: "order", entityId: updated.id },
+      });
+      return updated;
     });
 
-    await logActivity("order", `Order ${order.orderNumber} marked ${status}`, "order", order.id);
     res.json(order);
   })
 );
@@ -381,9 +400,11 @@ ordersRouter.delete(
         }
       }
       await tx.order.delete({ where: { id: existing.id } });
+      await tx.activity.create({
+        data: { type: "order", message: `Order ${existing.orderNumber} deleted`, entity: "order", entityId: existing.id },
+      });
     });
 
-    await logActivity("order", `Order ${existing.orderNumber} deleted`, "order", existing.id);
     res.json({ ok: true });
   })
 );

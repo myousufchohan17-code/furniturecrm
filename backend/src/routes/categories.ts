@@ -36,8 +36,11 @@ categoriesRouter.post(
       res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
       return;
     }
-    const category = await prisma.category.create({ data: parsed.data });
-    await logActivity("category", `Category created: ${category.name}`, "category", category.id);
+    const category = await prisma.$transaction(async (tx) => {
+      const created = await tx.category.create({ data: parsed.data });
+      await tx.activity.create({ data: { type: "category", message: `Category created: ${created.name}`, entity: "category", entityId: created.id } });
+      return created;
+    });
     res.status(201).json(category);
   })
 );
@@ -76,8 +79,10 @@ categoriesRouter.delete(
       });
       return;
     }
-    await prisma.category.delete({ where: { id: existing.id } });
-    await logActivity("category", `Category deleted: ${existing.name}`, "category", existing.id);
+    await prisma.$transaction(async (tx) => {
+      await tx.category.delete({ where: { id: existing.id } });
+      await tx.activity.create({ data: { type: "category", message: `Category deleted: ${existing.name}`, entity: "category", entityId: existing.id } });
+    });
     res.json({ ok: true });
   })
 );
